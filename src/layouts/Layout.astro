@@ -1,0 +1,148 @@
+---
+import "../styles/global.css";
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = "Co-Assembly",
+  description = "Taiwan's first design collective founded on cooperative principles.",
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <meta name="color-scheme" content="light only" />
+    <meta name="theme-color" content="#d9d9d9" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="canonical" href={Astro.url.href} />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={Astro.url.href} />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <title>{title}</title>
+  </head>
+  <body>
+    <div id="asterisk" aria-hidden="true"></div>
+    <main>
+      <slot />
+      <div class="divider" aria-hidden="true"></div>
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/p5@1.11.2/lib/p5.min.js"></script>
+    <script is:inline>
+      window.addEventListener("load", () => {
+        if (typeof p5 === "undefined") {
+          console.error("p5.js failed to load");
+          return;
+        }
+        new p5((p) => {
+          p.setup = () => {
+            const c = p.createCanvas(p.windowWidth, p.windowHeight);
+            c.parent("asterisk");
+            c.elt.style.position = "fixed";
+            c.elt.style.top = "0";
+            c.elt.style.left = "0";
+            c.elt.style.pointerEvents = "none";
+            c.elt.setAttribute("aria-hidden", "true");
+            p.noLoop();
+          };
+          p.draw = () => {
+            p.clear();
+            p.translate(p.width / 2, p.height / 2);
+            const scroll = window.scrollY;
+            p.rotate(scroll * 0.0008);
+            const spokes = 6;
+            const base = Math.min(p.width, p.height) * 0.3;
+            const sw = Math.min(Math.max(base * 0.12, 12), 56);
+            p.stroke(0);
+            p.strokeWeight(sw);
+            p.strokeCap(p.SQUARE);
+            for (let i = 0; i < spokes; i++) {
+              p.push();
+              p.rotate((p.TWO_PI / spokes) * i);
+              p.line(0, 0, base, 0);
+              p.pop();
+            }
+          };
+          window.addEventListener("scroll", () => p.redraw(), { passive: true });
+          p.windowResized = () => {
+            p.resizeCanvas(p.windowWidth, p.windowHeight);
+            p.redraw();
+          };
+        });
+      });
+    </script>
+    <script is:inline>
+      (() => {
+        const ITALIC_P = 0.18;
+
+        function italicize(root) {
+          const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+          const targets = [];
+          let n;
+          while ((n = walker.nextNode())) {
+            if (n.nodeValue.trim()) targets.push(n);
+          }
+          for (const tn of targets) {
+            const parts = tn.nodeValue.split(/(\s+)/);
+            const frag = document.createDocumentFragment();
+            for (const part of parts) {
+              if (!part) continue;
+              if (/^\s+$/.test(part)) {
+                frag.appendChild(document.createTextNode(part));
+                continue;
+              }
+              if (Math.random() < ITALIC_P) {
+                const em = document.createElement("em");
+                em.textContent = part;
+                frag.appendChild(em);
+              } else {
+                frag.appendChild(document.createTextNode(part));
+              }
+            }
+            tn.parentNode.replaceChild(frag, tn);
+          }
+        }
+
+        function addBadges() {
+          for (const col of document.querySelectorAll(".col")) {
+            let i = 0;
+            const tag = (col.lang || "x").replace(/[^a-z]/gi, "");
+            for (const li of col.querySelectorAll(":scope > ol > li")) {
+              i++;
+              const id = `badge-${tag}-${i}`;
+              const badge = document.createElement("span");
+              badge.className = "badge";
+              badge.setAttribute("aria-hidden", "true");
+              badge.innerHTML =
+                '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">' +
+                  '<mask id="' + id + '">' +
+                    '<rect width="100" height="100" fill="white"/>' +
+                    '<text x="50" y="50" dy="0.35em" text-anchor="middle" font-family="inherit" font-weight="700" font-size="68" fill="black">' + i + '</text>' +
+                  '</mask>' +
+                  '<circle cx="50" cy="50" r="48" fill="black" mask="url(#' + id + ')"/>' +
+                '</svg>';
+              li.prepend(badge);
+            }
+          }
+        }
+
+        const main = document.querySelector("main");
+        if (main) {
+          for (const el of main.querySelectorAll('[lang="en"] li, [lang="en"] p')) italicize(el);
+          addBadges();
+          main.classList.add("decorated");
+        }
+      })();
+    </script>
+  </body>
+</html>

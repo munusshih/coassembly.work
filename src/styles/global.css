@@ -1,0 +1,306 @@
+/* Pitch Sans is a commercial font from Klim Type Foundry.
+   Place licensed font files in /public/fonts/ matching the paths below. */
+@font-face {
+  font-family: "Pitch Sans";
+  src:
+    url("/fonts/PitchSans-Bold.woff2") format("woff2"),
+    url("/fonts/PitchSans-Bold.woff") format("woff");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Pitch Sans";
+  src:
+    url("/fonts/PitchSans-BoldItalic.woff2") format("woff2"),
+    url("/fonts/PitchSans-BoldItalic.woff") format("woff");
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+:root {
+  --color-bg: #d9d9d9;
+  --color-fg: #000000;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  overflow-x: clip;
+}
+
+@keyframes slideBlocks {
+  from {
+    background-position: 0 0;
+  }
+
+  to {
+    background-position: -360vw 0;
+  }
+}
+
+html {
+  background-color: var(--color-bg);
+  background-image: repeating-linear-gradient(90deg,
+      #00ffff 0 12.5vw,
+      #ff00ff 12.5vw 25vw,
+      #ffff00 25vw 37.5vw,
+      #ff0000 37.5vw 50vw,
+      #00ff00 50vw 62.5vw,
+      #0000ff 62.5vw 75vw,
+      #000000 75vw 87.5vw,
+      #ffffff 87.5vw 100vw);
+  animation: slideBlocks 45s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    animation: none;
+  }
+}
+
+body {
+  margin: 1rem 0 1.5rem;
+  min-height: calc(100vh - 1.9rem);
+  background-color: var(--color-bg);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0   0 0 0 0 0   0 0 0 0 0   0.299 0.587 0.114 0 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/></svg>");
+  background-size: 240px 240px;
+  background-repeat: repeat;
+  color: var(--color-fg);
+  font-family: "Pitch Sans", "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", ui-sans-serif, system-ui, sans-serif;
+  font-weight: 700;
+  font-size: clamp(1.75rem, 3vw + 1rem, 3.25rem);
+  line-height: 1.05;
+  letter-spacing: -0.085em;
+  word-spacing: -0.12em;
+  text-wrap: pretty;
+  overflow-wrap: break-word;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+main {
+  display: grid;
+  gap: 0;
+  grid-template-columns: 1fr;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.col {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(3rem, 6vw, 5rem);
+  padding: clamp(1.5rem, 4vw, 3rem);
+}
+
+.col>* {
+  min-width: 0;
+  max-width: 100%;
+}
+
+@media (min-width: 800px) {
+  main {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: repeat(7, auto);
+    row-gap: clamp(3rem, 6vw, 5rem);
+  }
+
+  .col {
+    display: grid;
+    grid-template-rows: subgrid;
+    grid-row: 1 / -1;
+    gap: 0;
+    min-width: 0;
+    padding: clamp(1.5rem, 4vw, 3rem) clamp(1.25rem, 2vw, 2rem);
+  }
+
+  .col:first-of-type {
+    padding-left: clamp(1.5rem, 4vw, 3rem);
+  }
+
+  .col:last-of-type {
+    padding-right: clamp(1.5rem, 4vw, 3rem);
+  }
+
+  .divider {
+    display: block;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 2px;
+    background: var(--color-fg);
+    pointer-events: none;
+    z-index: 3;
+    transform: translateX(-1px);
+  }
+}
+
+.divider {
+  display: none;
+}
+
+#asterisk {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+  pointer-events: none;
+}
+
+#asterisk canvas {
+  display: block;
+}
+
+[lang^="zh"] {
+  letter-spacing: -0.02em;
+  word-spacing: 0;
+  font-size: 0.82em;
+  line-height: 1.4;
+}
+
+[lang^="zh"] h1 {
+  font-size: 1em;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  word-break: keep-all;
+}
+
+h1 {
+  font-size: 1em;
+  line-height: 1.1;
+  letter-spacing: -0.06em;
+  text-wrap: balance;
+  margin: 0 0 0.5rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  hyphens: auto;
+}
+
+p {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+[lang^="zh"] p {
+  word-break: normal;
+  overflow-wrap: break-word;
+  line-break: auto;
+}
+
+ol {
+  display: contents;
+  list-style: none;
+}
+
+li {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+[lang^="zh"] li {
+  word-break: normal;
+  overflow-wrap: break-word;
+  line-break: auto;
+}
+
+.col ol>li:nth-of-type(1) {
+  padding-left: 0;
+}
+
+.col ol>li:nth-of-type(2) {
+  padding-left: min(4ch, 8%);
+}
+
+.col ol>li:nth-of-type(3) {
+  padding-left: min(9ch, 18%);
+}
+
+.col ol>li:nth-of-type(4) {
+  padding-left: min(5ch, 10%);
+}
+
+.col ol>li:nth-of-type(5) {
+  padding-left: min(11ch, 22%);
+}
+
+.col>p {
+  border-top: 0.4rem solid var(--color-fg);
+  padding-top: clamp(1.5rem, 3vw, 2.5rem);
+}
+
+.underline {
+  text-decoration: underline;
+  text-decoration-thickness: 0.18em;
+  text-underline-offset: 0.06em;
+  text-decoration-skip-ink: none;
+}
+
+.col {
+  container-type: inline-size;
+}
+
+.badge {
+  display: block;
+  width: min(55cqw, 18rem);
+  height: min(55cqw, 18rem);
+  margin: clamp(1.5rem, 3vw, 2.5rem) 0 1rem;
+  flex-shrink: 0;
+}
+
+.col>p:first-of-type .badge,
+.col>p:nth-of-type(1) .badge {
+  margin-top: 0;
+}
+
+.badge svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+em {
+  font-style: italic;
+}
+
+main {
+  visibility: hidden;
+}
+
+main.decorated {
+  visibility: visible;
+}
+
+a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+a:hover {
+  text-decoration: none;
+}
+
+::selection {
+  background: var(--color-fg);
+  color: var(--color-bg);
+}
