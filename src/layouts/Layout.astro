@@ -37,48 +37,183 @@ const {
       <slot />
       <div class="divider" aria-hidden="true"></div>
     </main>
-    <script src="https://cdn.jsdelivr.net/npm/p5@1.11.2/lib/p5.min.js"></script>
+    <script src="https://unpkg.com/three@0.149.0/build/three.min.js"></script>
     <script is:inline>
       window.addEventListener("load", () => {
-        if (typeof p5 === "undefined") {
-          console.error("p5.js failed to load");
+        if (typeof THREE === "undefined") {
+          console.error("three.js failed to load");
           return;
         }
-        new p5((p) => {
-          p.setup = () => {
-            const c = p.createCanvas(p.windowWidth, p.windowHeight);
-            c.parent("asterisk");
-            c.elt.style.position = "fixed";
-            c.elt.style.top = "0";
-            c.elt.style.left = "0";
-            c.elt.style.pointerEvents = "none";
-            c.elt.setAttribute("aria-hidden", "true");
-            p.noLoop();
-          };
-          p.draw = () => {
-            p.clear();
-            p.translate(p.width / 2, p.height / 2);
-            const scroll = window.scrollY;
-            p.rotate(scroll * 0.0008);
-            const spokes = 6;
-            const base = Math.min(p.width, p.height) * 0.3;
-            const sw = Math.min(Math.max(base * 0.12, 12), 56);
-            p.stroke(0);
-            p.strokeWeight(sw);
-            p.strokeCap(p.SQUARE);
-            for (let i = 0; i < spokes; i++) {
-              p.push();
-              p.rotate((p.TWO_PI / spokes) * i);
-              p.line(0, 0, base, 0);
-              p.pop();
-            }
-          };
-          window.addEventListener("scroll", () => p.redraw(), { passive: true });
-          p.windowResized = () => {
-            p.resizeCanvas(p.windowWidth, p.windowHeight);
-            p.redraw();
-          };
+        const container = document.getElementById("asterisk");
+        if (!container) return;
+
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: "high-performance" });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 3));
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.outputEncoding = THREE.sRGBEncoding;
+        renderer.toneMapping = THREE.LinearToneMapping;
+        renderer.toneMappingExposure = 1.0;
+
+        const canvas = renderer.domElement;
+        canvas.style.position = "fixed";
+        canvas.style.top = "0";
+        canvas.style.left = "0";
+        canvas.style.pointerEvents = "none";
+        canvas.setAttribute("aria-hidden", "true");
+        container.appendChild(canvas);
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(0, 0, 12);
+
+        const envScene = new THREE.Scene();
+        const envSphere = new THREE.Mesh(
+          new THREE.SphereGeometry(50, 64, 32),
+          new THREE.ShaderMaterial({
+            side: THREE.BackSide,
+            vertexShader: "varying vec3 vDir; void main(){ vDir = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
+            fragmentShader: "varying vec3 vDir; void main(){ vec3 d = normalize(vDir); vec3 col = vec3(0.0); float hot = pow(max(dot(d, normalize(vec3(0.3, 0.78, 0.45))), 0.0), 90.0); col += vec3(22.0) * hot; float side = pow(max(dot(d, normalize(vec3(-0.9, 0.32, 0.12))), 0.0), 55.0); col += vec3(9.0) * side; float band = smoothstep(0.005, 0.0, abs(d.y + 0.08)); col += vec3(2.5) * band; gl_FragColor = vec4(col, 1.0); }"
+          })
+        );
+        envScene.add(envSphere);
+
+        const cubeRT = new THREE.WebGLCubeRenderTarget(1024, { type: THREE.HalfFloatType });
+        const cubeCam = new THREE.CubeCamera(0.1, 100, cubeRT);
+        envScene.add(cubeCam);
+        cubeCam.update(renderer, envScene);
+
+        const pmrem = new THREE.PMREMGenerator(renderer);
+        pmrem.compileCubemapShader();
+        const envTexture = pmrem.fromCubemap(cubeRT.texture).texture;
+        pmrem.dispose();
+        cubeRT.dispose();
+        scene.environment = envTexture;
+
+        const material = new THREE.MeshStandardMaterial({
+          color: 0x000000,
+          metalness: 1.0,
+          roughness: 0.04,
+          envMapIntensity: 0.85,
         });
+
+        const len = 5.4;
+        const thick = 0.42;
+        const depth = 0.42;
+        const cornerR = 0.208;
+        const shape = new THREE.Shape();
+        const hl = len / 2;
+        const ht = thick / 2;
+        const r = Math.min(cornerR, ht - 0.001);
+        shape.moveTo(-hl + r, -ht);
+        shape.lineTo(hl - r, -ht);
+        shape.quadraticCurveTo(hl, -ht, hl, -ht + r);
+        shape.lineTo(hl, ht - r);
+        shape.quadraticCurveTo(hl, ht, hl - r, ht);
+        shape.lineTo(-hl + r, ht);
+        shape.quadraticCurveTo(-hl, ht, -hl, ht - r);
+        shape.lineTo(-hl, -ht + r);
+        shape.quadraticCurveTo(-hl, -ht, -hl + r, -ht);
+        shape.closePath();
+        const geom = new THREE.ExtrudeGeometry(shape, {
+          steps: 1,
+          depth: depth,
+          bevelEnabled: true,
+          bevelThickness: 0.205,
+          bevelSize: 0.205,
+          bevelOffset: 0,
+          bevelSegments: 16,
+          curveSegments: 32,
+        });
+        geom.translate(0, 0, -depth / 2);
+
+        const group = new THREE.Group();
+        for (let i = 0; i < 3; i++) {
+          const mesh = new THREE.Mesh(geom, material);
+          mesh.rotation.z = (Math.PI / 3) * i;
+          group.add(mesh);
+        }
+        scene.add(group);
+
+        const key = new THREE.DirectionalLight(0xffffff, 0.7);
+        key.position.set(-4, 5, 6);
+        scene.add(key);
+
+        const fill = new THREE.DirectionalLight(0x99bbff, 0.35);
+        fill.position.set(4, -2, 3);
+        scene.add(fill);
+
+        let rotX = -0.18, rotY = 0.22, rotZ = 0;
+        let velX = 0, velY = 0, velZ = 0;
+        let targetVelX = 0, targetVelY = 0, targetVelZ = 0;
+        let lastScroll = window.scrollY;
+        let lastScrollTime = performance.now();
+        const idleX = -0.022;
+        const idleY = 0.035;
+        const idleZ = 0.06;
+        const damping = 0.975;
+        const lerpRate = 3.0;
+        const maxVel = 8.0;
+
+        const clamp = (v) => Math.max(-maxVel, Math.min(maxVel, v));
+        window.addEventListener("scroll", () => {
+          const now = performance.now();
+          const dt = Math.max(8, now - lastScrollTime);
+          const mag = Math.abs(window.scrollY - lastScroll);
+          const speed = mag / dt;
+          const impulse = Math.min(speed, 12) * mag * 0.0015 + speed * 0.4;
+          targetVelX = clamp(targetVelX + impulse * 0.5 * (Math.random() * 2 - 1));
+          targetVelY = clamp(targetVelY + impulse * 0.75 * (Math.random() * 2 - 1));
+          targetVelZ = clamp(targetVelZ + impulse * 1.0 * (Math.random() * 2 - 1));
+          lastScroll = window.scrollY;
+          lastScrollTime = now;
+        }, { passive: true });
+
+        const baseDiameter = len + 2 * 0.205;
+        function fitAsterisk() {
+          const aspect = window.innerWidth / window.innerHeight;
+          const fovRad = (35 * Math.PI) / 180;
+          const visH = 2 * 12 * Math.tan(fovRad / 2);
+          const visW = visH * aspect;
+          const minVis = Math.min(visH, visW);
+          const targetSize = minVis * 0.65;
+          group.scale.setScalar(targetSize / baseDiameter);
+        }
+        fitAsterisk();
+
+        window.addEventListener("resize", () => {
+          camera.aspect = window.innerWidth / window.innerHeight;
+          camera.updateProjectionMatrix();
+          renderer.setSize(window.innerWidth, window.innerHeight);
+          fitAsterisk();
+        });
+
+        let lastTime = performance.now();
+        function animate(now) {
+          const dt = Math.min((now - lastTime) / 1000, 0.1);
+          lastTime = now;
+
+          const decay = Math.pow(damping, dt * 60);
+          targetVelX *= decay;
+          targetVelY *= decay;
+          targetVelZ *= decay;
+
+          const lerp = 1 - Math.exp(-lerpRate * dt);
+          velX += (targetVelX - velX) * lerp;
+          velY += (targetVelY - velY) * lerp;
+          velZ += (targetVelZ - velZ) * lerp;
+
+          rotX += (idleX + velX) * dt;
+          rotY += (idleY + velY) * dt;
+          rotZ += (idleZ + velZ) * dt;
+
+          group.rotation.x = rotX;
+          group.rotation.y = rotY;
+          group.rotation.z = rotZ;
+
+          renderer.render(scene, camera);
+          requestAnimationFrame(animate);
+        }
+        requestAnimationFrame((t) => { lastTime = t; animate(t); });
       });
     </script>
     <script is:inline>
@@ -129,7 +264,7 @@ const {
                     '<rect width="100" height="100" fill="white"/>' +
                     '<text x="50" y="50" dy="0.35em" text-anchor="middle" font-family="inherit" font-weight="700" font-size="68" fill="black">' + i + '</text>' +
                   '</mask>' +
-                  '<circle cx="50" cy="50" r="48" fill="black" mask="url(#' + id + ')"/>' +
+                  '<circle cx="50" cy="50" r="48" fill="#000" mask="url(#' + id + ')"/>' +
                 '</svg>';
               li.prepend(badge);
             }
