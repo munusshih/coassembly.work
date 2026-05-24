@@ -65,9 +65,19 @@ try {
   await page.goto(URL, { waitUntil: "networkidle" });
 
   await page.evaluate(() => document.fonts && document.fonts.ready);
-  await page.waitForTimeout(2200);
+  await page.waitForTimeout(2500);
 
-  const buffer = await page.screenshot({ type: "png" });
+  await page.evaluate(() => {
+    window.requestAnimationFrame = () => 0;
+    document.getAnimations().forEach((a) => a.pause());
+  });
+  await page.waitForTimeout(300);
+
+  const buffer = await page.screenshot({
+    type: "png",
+    animations: "disabled",
+    timeout: 60000,
+  });
   for (const out of OUTPUTS) {
     writeFileSync(out, buffer);
     console.log(`Screenshot saved: ${out}`);
