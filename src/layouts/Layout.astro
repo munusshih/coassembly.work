@@ -4,12 +4,12 @@ import "../styles/global.css";
 interface Props {
   title?: string;
   description?: string;
+  frontmatter?: { title?: string; description?: string };
 }
 
-const {
-  title = "Co-Assembly",
-  description = "Taiwan's first design collective founded on cooperative principles.",
-} = Astro.props;
+const props = Astro.props;
+const title = props.frontmatter?.title ?? props.title ?? "CoAssembly Design co-op";
+const description = props.frontmatter?.description ?? props.description ?? "Taiwan's first design studio founded on cooperative principles.";
 ---
 
 <!doctype html>
@@ -26,17 +26,33 @@ const {
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={Astro.url.href} />
-    <meta name="twitter:card" content="summary" />
+    <meta property="og:image" content={new URL("/og.png", Astro.site ?? Astro.url).href} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={new URL("/og.png", Astro.site ?? Astro.url).href} />
     <title>{title}</title>
   </head>
   <body>
+    <svg width="0" height="0" aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden;">
+      <defs>
+        <filter id="ink" x="-2%" y="-2%" width="104%" height="104%">
+          <feTurbulence type="fractalNoise" baseFrequency="1.8" numOctaves="2" seed="4" result="noise"/>
+          <feDisplacementMap in="SourceGraphic" in2="noise" scale="1.2" xChannelSelector="R" yChannelSelector="G"/>
+        </filter>
+      </defs>
+    </svg>
     <div id="asterisk" aria-hidden="true"></div>
     <main>
       <slot />
       <div class="divider" aria-hidden="true"></div>
     </main>
+    <script>
+      import { inject } from "@vercel/analytics";
+      inject();
+    </script>
     <script src="https://unpkg.com/three@0.149.0/build/three.min.js"></script>
     <script is:inline>
       window.addEventListener("load", () => {
@@ -72,7 +88,7 @@ const {
           new THREE.ShaderMaterial({
             side: THREE.BackSide,
             vertexShader: "varying vec3 vDir; void main(){ vDir = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
-            fragmentShader: "varying vec3 vDir; void main(){ vec3 d = normalize(vDir); vec3 col = vec3(0.0); float hot = pow(max(dot(d, normalize(vec3(0.3, 0.78, 0.45))), 0.0), 90.0); col += vec3(22.0) * hot; float side = pow(max(dot(d, normalize(vec3(-0.9, 0.32, 0.12))), 0.0), 55.0); col += vec3(9.0) * side; float band = smoothstep(0.005, 0.0, abs(d.y + 0.08)); col += vec3(2.5) * band; gl_FragColor = vec4(col, 1.0); }"
+            fragmentShader: "varying vec3 vDir; void main(){ vec3 d = normalize(vDir); vec3 col = vec3(0.0); float hot = pow(max(dot(d, normalize(vec3(0.3, 0.78, 0.45))), 0.0), 32.0); col += vec3(11.0) * hot; float side = pow(max(dot(d, normalize(vec3(-0.9, 0.32, 0.12))), 0.0), 24.0); col += vec3(6.5) * side; float low = pow(max(dot(d, normalize(vec3(0.15, -0.5, 0.55))), 0.0), 26.0); col += vec3(4.5) * low; gl_FragColor = vec4(col, 1.0); }"
           })
         );
         envScene.add(envSphere);

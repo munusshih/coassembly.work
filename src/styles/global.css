@@ -186,6 +186,15 @@ h1 {
   hyphens: auto;
 }
 
+main h1,
+main p,
+main li,
+main a {
+  filter: url(#ink);
+  text-shadow: 0 0 0.6px rgba(0, 0, 0, 0.45);
+  mix-blend-mode: multiply;
+}
+
 p {
   margin: 0;
   min-width: 0;

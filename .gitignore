@@ -2,6 +2,7 @@ node_modules/
 dist/
 .astro/
 .DS_Store
+public/og.png
 .env
 .env.*
 !.env.example
