@@ -1,6 +1,6 @@
 {
   "buildCommand": "npm run build:og",
-  "installCommand": "npm install && npx playwright install chromium",
+  "installCommand": "npm install",
   "outputDirectory": "dist",
   "framework": "astro"
 }
