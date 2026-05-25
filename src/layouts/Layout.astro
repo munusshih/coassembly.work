@@ -232,6 +232,7 @@ const description = props.frontmatter?.description ?? props.description ?? "Taiw
         requestAnimationFrame((t) => { lastTime = t; animate(t); });
       });
     </script>
+    <script is:inline src="https://unpkg.com/gsap@3.12.5/dist/gsap.min.js"></script>
     <script is:inline>
       (() => {
         const ITALIC_P = 0.18;
@@ -288,11 +289,43 @@ const description = props.frontmatter?.description ?? props.description ?? "Taiw
         }
 
         const main = document.querySelector("main");
-        if (main) {
-          for (const el of main.querySelectorAll('[lang="en"] li, [lang="en"] p')) italicize(el);
-          addBadges();
-          main.classList.add("decorated");
+        if (!main) return;
+
+        for (const el of main.querySelectorAll('[lang="en"] li, [lang="en"] p')) italicize(el);
+        addBadges();
+
+        const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const cols = Array.from(main.querySelectorAll(".col"));
+        const rows = [];
+        const maxLen = Math.max(0, ...cols.map((c) => c.querySelectorAll(":scope > h1, :scope > ol > li, :scope > p").length));
+        for (let i = 0; i < maxLen; i++) {
+          const row = [];
+          for (const col of cols) {
+            const items = col.querySelectorAll(":scope > h1, :scope > ol > li, :scope > p");
+            if (items[i]) row.push(items[i]);
+          }
+          if (row.length) rows.push(row);
         }
+        const all = rows.flat();
+
+        if (typeof gsap === "undefined" || reduceMotion || !all.length) {
+          main.classList.add("decorated");
+          return;
+        }
+
+        gsap.set(all, { clipPath: "inset(0 100% 0 0)", xPercent: -2, willChange: "clip-path, transform" });
+        main.classList.add("decorated");
+
+        gsap.to(all, {
+          clipPath: "inset(0 0% 0 0)",
+          xPercent: 0,
+          duration: 0.7,
+          ease: "power3.out",
+          stagger: 0.15,
+          onComplete: () => {
+            for (const el of all) el.style.willChange = "";
+          },
+        });
       })();
     </script>
   </body>
