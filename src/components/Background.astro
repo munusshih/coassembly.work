@@ -1,0 +1,16 @@
+---
+// Page-wide background layers:
+//   #check     — fixed rainbow stripes (styled in global.css)
+//   #asterisk  — container for the three.js canvas (3D shape per page)
+// Three.js is loaded from CDN; the scene setup lives in src/scripts/shape3d.js
+// and picks which shape to draw based on <body data-shape="...">.
+---
+
+<div id="check" aria-hidden="true"></div>
+<div id="asterisk" aria-hidden="true"></div>
+
+<script src="https://unpkg.com/three@0.149.0/build/three.min.js" is:inline
+></script>
+<script>
+  import "../scripts/shape3d.js";
+</script>

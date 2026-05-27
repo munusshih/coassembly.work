@@ -1,0 +1,42 @@
+---
+const here = Astro.url.pathname.replace(/\/$/, "") || "/";
+
+const links = [
+  { href: "/", label: "Home", labelZh: "首頁" },
+  { href: "/hiring", label: "Hiring", labelZh: "招募" },
+  { href: "/worker-owners", label: "Worker-owners", labelZh: "勞工老闆" },
+];
+
+const isCurrent = (href: string) => (href.replace(/\/$/, "") || "/") === here;
+---
+
+<nav id="nav" aria-label="Site">
+  <button
+    id="nav-toggle"
+    type="button"
+    aria-expanded="false"
+    aria-controls="nav-menu"
+    aria-label="Open menu"
+  >
+    <span></span><span></span><span></span>
+  </button>
+  <ul id="nav-menu" hidden>
+    {
+      links.map((link) => (
+        <li>
+          <a
+            href={link.href}
+            aria-current={isCurrent(link.href) ? "page" : undefined}
+          >
+            <span>{link.label}</span>
+            <span lang="zh-Hant-TW">{link.labelZh}</span>
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</nav>
+
+<script>
+  import "../scripts/nav.js";
+</script>

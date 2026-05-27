@@ -1,0 +1,27 @@
+---
+// Defines the SVG filter `#ink` referenced from global.css for text effects.
+---
+
+<svg
+  width="0"
+  height="0"
+  aria-hidden="true"
+  style="position:absolute;width:0;height:0;overflow:hidden;"
+>
+  <defs>
+    <filter id="ink" x="-2%" y="-2%" width="104%" height="104%">
+      <feTurbulence
+        type="fractalNoise"
+        baseFrequency="1.8"
+        numOctaves="2"
+        seed="4"
+        result="noise"></feTurbulence>
+      <feDisplacementMap
+        in="SourceGraphic"
+        in2="noise"
+        scale="1.2"
+        xChannelSelector="R"
+        yChannelSelector="G"></feDisplacementMap>
+    </filter>
+  </defs>
+</svg>

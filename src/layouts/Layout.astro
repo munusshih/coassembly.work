@@ -1,332 +1,54 @@
 ---
 import "../styles/global.css";
+import MetaTags from "../components/MetaTags.astro";
+import Background from "../components/Background.astro";
+import InkFilter from "../components/InkFilter.astro";
+import Nav from "../components/Nav.astro";
+import Footer from "../components/Footer.astro";
+import Reveal from "../components/Reveal.astro";
 
 interface Props {
   title?: string;
   description?: string;
-  frontmatter?: { title?: string; description?: string };
+  frontmatter?: {
+    title?: string;
+    description?: string;
+    shape?: string;
+    bodyClass?: string;
+    lang?: string;
+  };
 }
 
 const props = Astro.props;
-const title = props.frontmatter?.title ?? props.title ?? "CoAssembly Design co-op";
-const description = props.frontmatter?.description ?? props.description ?? "Taiwan's first design studio founded on cooperative principles.";
+const title =
+  props.frontmatter?.title ?? props.title ?? "CoAssembly Design co-op";
+const description =
+  props.frontmatter?.description ??
+  props.description ??
+  "Taiwan's first design studio founded on cooperative principles.";
+const shape = props.frontmatter?.shape ?? "asterisk";
+const bodyClass = props.frontmatter?.bodyClass ?? "";
+const mainLang = props.frontmatter?.lang;
 ---
 
 <!doctype html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content={description} />
-    <meta name="color-scheme" content="light only" />
-    <meta name="theme-color" content="#d9d9d9" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="canonical" href={Astro.url.href} />
-    <meta property="og:type" content="website" />
-    <meta property="og:title" content={title} />
-    <meta property="og:description" content={description} />
-    <meta property="og:url" content={Astro.url.href} />
-    <meta property="og:image" content={new URL("/og.png", Astro.site ?? Astro.url).href} />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content={title} />
-    <meta name="twitter:description" content={description} />
-    <meta name="twitter:image" content={new URL("/og.png", Astro.site ?? Astro.url).href} />
-    <title>{title}</title>
+    <MetaTags title={title} description={description} />
   </head>
-  <body>
-    <svg width="0" height="0" aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden;">
-      <defs>
-        <filter id="ink" x="-2%" y="-2%" width="104%" height="104%">
-          <feTurbulence type="fractalNoise" baseFrequency="1.8" numOctaves="2" seed="4" result="noise"/>
-          <feDisplacementMap in="SourceGraphic" in2="noise" scale="1.2" xChannelSelector="R" yChannelSelector="G"/>
-        </filter>
-      </defs>
-    </svg>
-    <div id="asterisk" aria-hidden="true"></div>
-    <main>
+  <body class={bodyClass} data-shape={shape}>
+    <Background />
+    <InkFilter />
+    <Nav />
+    <main lang={mainLang}>
       <slot />
       <div class="divider" aria-hidden="true"></div>
     </main>
+    <Footer />
     <script>
       import { inject } from "@vercel/analytics";
       inject();
     </script>
-    <script src="https://unpkg.com/three@0.149.0/build/three.min.js"></script>
-    <script is:inline>
-      window.addEventListener("load", () => {
-        if (typeof THREE === "undefined") {
-          console.error("three.js failed to load");
-          return;
-        }
-        const container = document.getElementById("asterisk");
-        if (!container) return;
-
-        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: "high-performance" });
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 3));
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.outputEncoding = THREE.sRGBEncoding;
-        renderer.toneMapping = THREE.LinearToneMapping;
-        renderer.toneMappingExposure = 1.0;
-
-        const canvas = renderer.domElement;
-        canvas.style.position = "fixed";
-        canvas.style.top = "0";
-        canvas.style.left = "0";
-        canvas.style.pointerEvents = "none";
-        canvas.setAttribute("aria-hidden", "true");
-        container.appendChild(canvas);
-
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.set(0, 0, 12);
-
-        const envScene = new THREE.Scene();
-        const envSphere = new THREE.Mesh(
-          new THREE.SphereGeometry(50, 64, 32),
-          new THREE.ShaderMaterial({
-            side: THREE.BackSide,
-            vertexShader: "varying vec3 vDir; void main(){ vDir = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
-            fragmentShader: "varying vec3 vDir; void main(){ vec3 d = normalize(vDir); vec3 col = vec3(0.0); float hot = pow(max(dot(d, normalize(vec3(0.3, 0.78, 0.45))), 0.0), 32.0); col += vec3(11.0) * hot; float side = pow(max(dot(d, normalize(vec3(-0.9, 0.32, 0.12))), 0.0), 24.0); col += vec3(6.5) * side; float low = pow(max(dot(d, normalize(vec3(0.15, -0.5, 0.55))), 0.0), 26.0); col += vec3(4.5) * low; gl_FragColor = vec4(col, 1.0); }"
-          })
-        );
-        envScene.add(envSphere);
-
-        const cubeRT = new THREE.WebGLCubeRenderTarget(1024, { type: THREE.HalfFloatType });
-        const cubeCam = new THREE.CubeCamera(0.1, 100, cubeRT);
-        envScene.add(cubeCam);
-        cubeCam.update(renderer, envScene);
-
-        const pmrem = new THREE.PMREMGenerator(renderer);
-        pmrem.compileCubemapShader();
-        const envTexture = pmrem.fromCubemap(cubeRT.texture).texture;
-        pmrem.dispose();
-        cubeRT.dispose();
-        scene.environment = envTexture;
-
-        const material = new THREE.MeshStandardMaterial({
-          color: 0x000000,
-          metalness: 1.0,
-          roughness: 0.04,
-          envMapIntensity: 0.85,
-        });
-
-        const len = 5.4;
-        const thick = 0.42;
-        const depth = 0.42;
-        const cornerR = 0.208;
-        const shape = new THREE.Shape();
-        const hl = len / 2;
-        const ht = thick / 2;
-        const r = Math.min(cornerR, ht - 0.001);
-        shape.moveTo(-hl + r, -ht);
-        shape.lineTo(hl - r, -ht);
-        shape.quadraticCurveTo(hl, -ht, hl, -ht + r);
-        shape.lineTo(hl, ht - r);
-        shape.quadraticCurveTo(hl, ht, hl - r, ht);
-        shape.lineTo(-hl + r, ht);
-        shape.quadraticCurveTo(-hl, ht, -hl, ht - r);
-        shape.lineTo(-hl, -ht + r);
-        shape.quadraticCurveTo(-hl, -ht, -hl + r, -ht);
-        shape.closePath();
-        const geom = new THREE.ExtrudeGeometry(shape, {
-          steps: 1,
-          depth: depth,
-          bevelEnabled: true,
-          bevelThickness: 0.205,
-          bevelSize: 0.205,
-          bevelOffset: 0,
-          bevelSegments: 16,
-          curveSegments: 32,
-        });
-        geom.translate(0, 0, -depth / 2);
-
-        const group = new THREE.Group();
-        for (let i = 0; i < 3; i++) {
-          const mesh = new THREE.Mesh(geom, material);
-          mesh.rotation.z = (Math.PI / 3) * i;
-          group.add(mesh);
-        }
-        scene.add(group);
-
-        const key = new THREE.DirectionalLight(0xffffff, 0.7);
-        key.position.set(-4, 5, 6);
-        scene.add(key);
-
-        const fill = new THREE.DirectionalLight(0x99bbff, 0.35);
-        fill.position.set(4, -2, 3);
-        scene.add(fill);
-
-        let rotX = -0.18, rotY = 0.22, rotZ = 0;
-        let velX = 0, velY = 0, velZ = 0;
-        let targetVelX = 0, targetVelY = 0, targetVelZ = 0;
-        let lastScroll = window.scrollY;
-        let lastScrollTime = performance.now();
-        const idleX = -0.022;
-        const idleY = 0.035;
-        const idleZ = 0.06;
-        const damping = 0.975;
-        const lerpRate = 3.0;
-        const maxVel = 8.0;
-
-        const clamp = (v) => Math.max(-maxVel, Math.min(maxVel, v));
-        window.addEventListener("scroll", () => {
-          const now = performance.now();
-          const dt = Math.max(8, now - lastScrollTime);
-          const mag = Math.abs(window.scrollY - lastScroll);
-          const speed = mag / dt;
-          const impulse = Math.min(speed, 12) * mag * 0.0015 + speed * 0.4;
-          targetVelX = clamp(targetVelX + impulse * 0.5 * (Math.random() * 2 - 1));
-          targetVelY = clamp(targetVelY + impulse * 0.75 * (Math.random() * 2 - 1));
-          targetVelZ = clamp(targetVelZ + impulse * 1.0 * (Math.random() * 2 - 1));
-          lastScroll = window.scrollY;
-          lastScrollTime = now;
-        }, { passive: true });
-
-        const baseDiameter = len + 2 * 0.205;
-        function fitAsterisk() {
-          const aspect = window.innerWidth / window.innerHeight;
-          const fovRad = (35 * Math.PI) / 180;
-          const visH = 2 * 12 * Math.tan(fovRad / 2);
-          const visW = visH * aspect;
-          const minVis = Math.min(visH, visW);
-          const targetSize = minVis * 0.65;
-          group.scale.setScalar(targetSize / baseDiameter);
-        }
-        fitAsterisk();
-
-        window.addEventListener("resize", () => {
-          camera.aspect = window.innerWidth / window.innerHeight;
-          camera.updateProjectionMatrix();
-          renderer.setSize(window.innerWidth, window.innerHeight);
-          fitAsterisk();
-        });
-
-        let lastTime = performance.now();
-        function animate(now) {
-          const dt = Math.min((now - lastTime) / 1000, 0.1);
-          lastTime = now;
-
-          const decay = Math.pow(damping, dt * 60);
-          targetVelX *= decay;
-          targetVelY *= decay;
-          targetVelZ *= decay;
-
-          const lerp = 1 - Math.exp(-lerpRate * dt);
-          velX += (targetVelX - velX) * lerp;
-          velY += (targetVelY - velY) * lerp;
-          velZ += (targetVelZ - velZ) * lerp;
-
-          rotX += (idleX + velX) * dt;
-          rotY += (idleY + velY) * dt;
-          rotZ += (idleZ + velZ) * dt;
-
-          group.rotation.x = rotX;
-          group.rotation.y = rotY;
-          group.rotation.z = rotZ;
-
-          renderer.render(scene, camera);
-          requestAnimationFrame(animate);
-        }
-        requestAnimationFrame((t) => { lastTime = t; animate(t); });
-      });
-    </script>
-    <script is:inline src="https://unpkg.com/gsap@3.12.5/dist/gsap.min.js"></script>
-    <script is:inline>
-      (() => {
-        const ITALIC_P = 0.18;
-
-        function italicize(root) {
-          const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-          const targets = [];
-          let n;
-          while ((n = walker.nextNode())) {
-            if (n.nodeValue.trim()) targets.push(n);
-          }
-          for (const tn of targets) {
-            const parts = tn.nodeValue.split(/(\s+)/);
-            const frag = document.createDocumentFragment();
-            for (const part of parts) {
-              if (!part) continue;
-              if (/^\s+$/.test(part)) {
-                frag.appendChild(document.createTextNode(part));
-                continue;
-              }
-              if (Math.random() < ITALIC_P) {
-                const em = document.createElement("em");
-                em.textContent = part;
-                frag.appendChild(em);
-              } else {
-                frag.appendChild(document.createTextNode(part));
-              }
-            }
-            tn.parentNode.replaceChild(frag, tn);
-          }
-        }
-
-        function addBadges() {
-          for (const col of document.querySelectorAll(".col")) {
-            let i = 0;
-            const tag = (col.lang || "x").replace(/[^a-z]/gi, "");
-            for (const li of col.querySelectorAll(":scope > ol > li")) {
-              i++;
-              const id = `badge-${tag}-${i}`;
-              const badge = document.createElement("span");
-              badge.className = "badge";
-              badge.setAttribute("aria-hidden", "true");
-              badge.innerHTML =
-                '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">' +
-                  '<mask id="' + id + '">' +
-                    '<rect width="100" height="100" fill="white"/>' +
-                    '<text x="50" y="50" dy="0.35em" text-anchor="middle" font-family="inherit" font-weight="700" font-size="68" fill="black">' + i + '</text>' +
-                  '</mask>' +
-                  '<circle cx="50" cy="50" r="48" fill="#000" mask="url(#' + id + ')"/>' +
-                '</svg>';
-              li.prepend(badge);
-            }
-          }
-        }
-
-        const main = document.querySelector("main");
-        if (!main) return;
-
-        for (const el of main.querySelectorAll('[lang="en"] li, [lang="en"] p')) italicize(el);
-        addBadges();
-
-        const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-        const cols = Array.from(main.querySelectorAll(".col"));
-        const rows = [];
-        const maxLen = Math.max(0, ...cols.map((c) => c.querySelectorAll(":scope > h1, :scope > ol > li, :scope > p").length));
-        for (let i = 0; i < maxLen; i++) {
-          const row = [];
-          for (const col of cols) {
-            const items = col.querySelectorAll(":scope > h1, :scope > ol > li, :scope > p");
-            if (items[i]) row.push(items[i]);
-          }
-          if (row.length) rows.push(row);
-        }
-        const all = rows.flat();
-
-        if (typeof gsap === "undefined" || reduceMotion || !all.length) {
-          main.classList.add("decorated");
-          return;
-        }
-
-        gsap.set(all, { clipPath: "inset(0 100% 0 0)", xPercent: -2, willChange: "clip-path, transform" });
-        main.classList.add("decorated");
-
-        gsap.to(all, {
-          clipPath: "inset(0 0% 0 0)",
-          xPercent: 0,
-          duration: 0.7,
-          ease: "power3.out",
-          stagger: 0.15,
-          onComplete: () => {
-            for (const el of all) el.style.willChange = "";
-          },
-        });
-      })();
-    </script>
+    <Reveal />
   </body>
 </html>
