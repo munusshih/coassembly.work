@@ -250,6 +250,17 @@ window.addEventListener("load", () => {
   const baseDiameter = built.baseDiameter;
   scene.add(group);
 
+  // Asterisk uses a deterministic loop so screen recordings can be exported
+  // as seamless video loops. Velocities cross zero to reverse directions.
+  const useLoopSpin = shapeKey === "asterisk";
+  const loopSeconds = 12;
+  const loopOmega = (2 * Math.PI) / loopSeconds;
+  const loopAxes = {
+    x: { revsPerLoop: 1, amp: 1.0, phase: 0.1 * Math.PI },
+    y: { revsPerLoop: -1, amp: 1.15, phase: 0.65 * Math.PI },
+    z: { revsPerLoop: 2, amp: 1.3, phase: 1.1 * Math.PI },
+  };
+
   const key = new THREE.DirectionalLight(0xffffff, 0.7);
   key.position.set(-4, 5, 6);
   scene.add(key);
@@ -280,6 +291,7 @@ window.addEventListener("load", () => {
   window.addEventListener(
     "scroll",
     () => {
+      if (useLoopSpin) return;
       const now = performance.now();
       const dt = Math.max(8, now - lastScrollTime);
       const mag = Math.abs(window.scrollY - lastScroll);
@@ -313,6 +325,7 @@ window.addEventListener("load", () => {
   fitAsterisk();
 
   let lastTime = performance.now();
+  let loopStartTime = lastTime;
   let running = true;
 
   let lastW = window.innerWidth;
@@ -360,6 +373,7 @@ window.addEventListener("load", () => {
     } else if (!running) {
       running = true;
       lastTime = performance.now();
+      loopStartTime = lastTime;
       requestAnimationFrame(animate);
     }
   });
@@ -379,9 +393,31 @@ window.addEventListener("load", () => {
     velY += (targetVelY - velY) * lerp;
     velZ += (targetVelZ - velZ) * lerp;
 
-    rotX += (idleX + velX) * dt;
-    rotY += (idleY + velY) * dt;
-    rotZ += (idleZ + velZ) * dt;
+    if (useLoopSpin) {
+      const t = (now - loopStartTime) / 1000;
+      const loopAngle = loopOmega * t;
+      const xBase = (2 * Math.PI * loopAxes.x.revsPerLoop) / loopSeconds;
+      const yBase = (2 * Math.PI * loopAxes.y.revsPerLoop) / loopSeconds;
+      const zBase = (2 * Math.PI * loopAxes.z.revsPerLoop) / loopSeconds;
+      rotX =
+        -0.18 +
+        xBase * t -
+        (loopAxes.x.amp / loopOmega) *
+          Math.cos(loopAngle + loopAxes.x.phase);
+      rotY =
+        0.22 +
+        yBase * t -
+        (loopAxes.y.amp / loopOmega) *
+          Math.cos(loopAngle + loopAxes.y.phase);
+      rotZ =
+        zBase * t -
+        (loopAxes.z.amp / loopOmega) *
+          Math.cos(loopAngle + loopAxes.z.phase);
+    } else {
+      rotX += (idleX + velX) * dt;
+      rotY += (idleY + velY) * dt;
+      rotZ += (idleZ + velZ) * dt;
+    }
 
     group.rotation.x = rotX;
     group.rotation.y = rotY;
